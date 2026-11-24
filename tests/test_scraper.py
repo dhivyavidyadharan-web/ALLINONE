@@ -193,7 +193,9 @@ def test_search_keeps_backed_results_and_rejects_namesakes(monkeypatch, site):
     assert not any("acmepumps-usa" in u for u in got)
     assert any("may not be this company" in n and "Texas" in n for n in out["notes"])
     sent = db.q1("SELECT sent_payload FROM llm_calls WHERE prompt_name='web_search' ORDER BY id DESC")["sent_payload"]
-    assert "Asha Rao" in sent and "F-T1" in sent  # name goes to search (query), deck hint is scrubbed to the ID
+    # The name goes to the search query itself, but the stored payload (and Langfuse) only keep "[redacted]";
+    # the deck hint is scrubbed to the founder ID.
+    assert "Asha Rao" not in sent and "Founders: [redacted]" in sent and "F-T1" in sent
 
 
 def test_search_results_flow_into_scoring_without_founder_name(monkeypatch, site):

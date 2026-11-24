@@ -115,6 +115,7 @@ each founder + company).
 | Is it safe? | `/audit` (exact payload per call + PII scan), founder ID instead of contact details, `store=False` at Gemini, login on the deployed app, secrets only in env |
 | Real-world volume? | Neon queue + ticks + stale recovery; retries → fallback models; `test_volume_20_none_disappear` |
 | Can you operate it? | `/traces` per run (+ Langfuse if set); content-hashed prompt versions |
+| Gateway down? | Portkey is optional: if it is unreachable or rejects its key, the call goes straight to Gemini (logged as `GatewayDown`). Search/page-reading steps never use Portkey because they need Google's built-in tools |
 | Economics? | `/costs` per call/app/day/week/month; daily limit pauses and alerts |
 
 Mail and calendar are built-in simulations behind `outreach.send_mail / is_free / book` (swap for Gmail and

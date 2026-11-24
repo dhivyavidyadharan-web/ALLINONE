@@ -76,6 +76,7 @@ MOCK_PRICE_AS = "gemini-4-hydrogen"  # mock calls are priced like the scoring mo
 # --- Optional: Portkey gateway (Case 04 Task 3) ---------------------------
 PORTKEY_API_KEY = os.getenv("PORTKEY_API_KEY", "")
 PORTKEY_BASE_URL = os.getenv("PORTKEY_BASE_URL", "https://api.portkey.ai/v1").rstrip("/")
+PORTKEY_VIRTUAL_KEY = os.getenv("PORTKEY_VIRTUAL_KEY", "")  # optional: Gemini key stored in Portkey instead
 PORTKEY_RETRY_ATTEMPTS = _i("PORTKEY_RETRY_ATTEMPTS", 3)
 
 # --- Optional: Langfuse (Case 04 Task 4) ---------------------------------

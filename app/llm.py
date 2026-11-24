@@ -7,6 +7,7 @@ Every call:  cost guard -> render versioned prompt -> Gemini (direct, or via Por
 import json
 import logging
 import random
+import re
 import time
 import uuid
 
@@ -119,22 +120,40 @@ def _citations(resp) -> list[dict]:
     return out
 
 
+class _GatewayDown(Exception):
+    """Portkey itself failed (unreachable, its own 5xx, or rejected the Portkey key)."""
+
+
+def uses_portkey(name: str) -> bool:
+    """Prompts with Google's built-in tools (search, page reading) always go straight to Gemini: Portkey's
+    OpenAI-style endpoint doesn't carry those tools or their citations."""
+    return route() == "portkey" and not prompts.PROMPTS[name].get("tools")
+
+
 def _portkey(name, model, system, user, app_id):
-    """Optional: same Gemini model, routed through Portkey's gateway (retries + logs on Portkey's side)."""
+    """Optional: same Gemini model, routed through Portkey's gateway (retries, logs, cost on Portkey's side)."""
     p = prompts.PROMPTS[name]
-    headers = {
-        "x-portkey-api-key": config.PORTKEY_API_KEY,
-        "x-portkey-provider": "google",
-        "Authorization": f"Bearer {config.GEMINI_API_KEY}",
+    headers = {"x-portkey-api-key": config.PORTKEY_API_KEY}
+    if config.PORTKEY_VIRTUAL_KEY:  # Gemini key kept in Portkey's vault
+        headers["x-portkey-virtual-key"] = config.PORTKEY_VIRTUAL_KEY
+    else:
+        headers.update({"x-portkey-provider": "google", "Authorization": f"Bearer {config.GEMINI_API_KEY}"})
+    headers.update({
         "x-portkey-config": json.dumps({"retry": {"attempts": config.PORTKEY_RETRY_ATTEMPTS,
                                                   "on_status_codes": [408, 429, 500, 502, 503, 504]}}),
         "x-portkey-trace-id": tracing.current_trace() or uuid.uuid4().hex,
         "x-portkey-metadata": json.dumps({"step": name, "app_id": str(app_id or ""), "prompt_version": prompts.version(name)}),
-    }
+    })
     body = {"model": model, "max_tokens": p["max_tokens"],
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
             "response_format": {"type": "json_schema", "json_schema": {"name": name, "schema": p["schema"]}}}
-    r = httpx.post(f"{config.PORTKEY_BASE_URL}/chat/completions", json=body, headers=headers, timeout=config.MODEL_TIMEOUT_S)
+    try:
+        r = httpx.post(f"{config.PORTKEY_BASE_URL}/chat/completions", json=body, headers=headers,
+                       timeout=config.MODEL_TIMEOUT_S)
+    except httpx.TransportError as e:
+        raise _GatewayDown(f"Portkey unreachable: {type(e).__name__}") from e
+    if r.status_code == 401 and "portkey" in r.text.lower():
+        raise _GatewayDown("Portkey rejected PORTKEY_API_KEY / PORTKEY_VIRTUAL_KEY")
     r.raise_for_status()
     j = r.json()
     u = j.get("usage") or {}
@@ -149,7 +168,16 @@ def _mock(name, mock_ctx, system, user):
     return data, _est_tokens(system + user), _est_tokens(json.dumps(data))
 
 
+_FOUNDERS_LINE = re.compile(r"^Founders: .*$", re.M)
+
+
+def _for_trace(name: str, user: str) -> str:
+    """Founder names are sent to the search step only; stored payloads and Langfuse get them redacted."""
+    return _FOUNDERS_LINE.sub("Founders: [redacted]", user) if name == "web_search" else user
+
+
 def _record(*, app_id, span_id, step, name, pv, model, rt, tin, tout, ms, status, err, system, user, data, start):
+    user = _for_trace(name, user)
     c = cost.price(config.MOCK_PRICE_AS if rt == "mock" else model, tin, tout)
     if rt != "mock" and status == "ok" and any(t.get("type") == "google_search" for t in prompts.PROMPTS[name].get("tools", [])):
         c += config.SEARCH_CALL_USD
@@ -172,6 +200,8 @@ def call(name: str, vars: dict, *, app_id=None, step=None, mock_ctx=None) -> dic
     rt = route()
     if rt == "mock":
         chain = chain[:1]
+    elif rt == "portkey" and not uses_portkey(name):
+        rt = "gemini"
     last: Exception | None = None
     for mi, model in enumerate(chain):
         for attempt in range(config.RETRIES_PER_MODEL):
@@ -185,6 +215,10 @@ def call(name: str, vars: dict, *, app_id=None, step=None, mock_ctx=None) -> dic
                     data, tin, tout = _portkey(name, model, system, user, app_id)
                 else:
                     data, tin, tout = _gemini(name, model, system, user)
+            except _GatewayDown as e:
+                # The gateway is optional: if it is down, keep screening by calling Gemini directly.
+                status, err, last = "error", f"GatewayDown: {e}"[:500], TransientModelError(str(e))
+                log.warning("%s; switching to direct Gemini for this call", e)
             except (ModelError, TransientModelError) as e:
                 status, err, last = "error", f"{type(e).__name__}: {e}"[:500], e
             except Exception as e:  # SDK / HTTP errors
@@ -195,12 +229,15 @@ def call(name: str, vars: dict, *, app_id=None, step=None, mock_ctx=None) -> dic
                 _record(app_id=app_id, span_id=span_id, step=label, name=name, pv=pv, model=model, rt=rt,
                         tin=tin, tout=tout, ms=int((time.time() - t0) * 1000), status=status, err=err,
                         system=system, user=user, data=data, start=start)
+            if (err or "").startswith("GatewayDown"):
+                rt = "gemini"  # recorded under 'portkey' above; later attempts go direct
             if status == "ok":
                 return data
             if isinstance(last, _Fatal):
                 raise ModelError(str(last))
             if isinstance(last, TransientModelError):
-                time.sleep(min(8.0, 0.5 * (2 ** attempt)) * (0.1 if rt == "mock" else 1))
+                if not (err or "").startswith("GatewayDown"):
+                    time.sleep(min(8.0, 0.5 * (2 ** attempt)) * (0.1 if rt == "mock" else 1))
                 continue
             break  # ModelError on this model: no point retrying it, try the next model
     if isinstance(last, TransientModelError):
