@@ -1,0 +1,45 @@
+{
+  "_note": "SAMPLE deal memos (fictional). Each has 'profile' = what the fund knew at decision time (used as input for the backtest) and 'reasoning' = why the partners decided. Replace with the real memos in the same shape.",
+  "memos": [
+    {
+      "id": "M-01", "company": "Bharat Bills", "sector": "fintech", "stage": "pre-seed", "decision": "invest", "date": "2023-04-12",
+      "profile": "Bharat Bills digitises invoice discounting for MSME suppliers to large corporates. Founder spent 8 years in trade finance at a private bank. 25 suppliers live in pilot, INR 1.4 Cr monthly invoices financed through bank partners; no balance sheet risk. Raised INR 30 L from angels.",
+      "reasoning": "Founder-market fit is exceptional - she ran the exact desk this replaces. Pilot shows real pull. Capital light because banks fund the book. We invested because founder insight plus early proof outweighed a crowded category. Outcome: raised seed 14 months later."
+    },
+    {
+      "id": "M-02", "company": "Anvil Materials", "sector": "deeptech", "stage": "pre-seed", "decision": "invest", "date": "2023-07-03",
+      "profile": "Anvil Materials makes low-carbon cement additives. Founders are IIT Bombay PhDs with 3 patents. Lab results show 20% clinker reduction. LOIs from 2 regional cement makers. Grant funded so far.",
+      "reasoning": "Deeptech where the science is proven at lab scale and buyers have signed LOIs. We accept no revenue at pre-seed in deeptech if the technical risk is retired and a buyer is named. Small cheque gets them to a pilot plant."
+    },
+    {
+      "id": "M-03", "company": "Nook Snacks", "sector": "consumer brands", "stage": "pre-seed", "decision": "invest", "date": "2023-10-19",
+      "profile": "Nook Snacks makes millet-based snacks for kids. Founder was category manager at a snacks major for 5 years. INR 12 L monthly GMV, 31% repeat within 60 days, contribution margin positive. Raised INR 50 L.",
+      "reasoning": "We back consumer brands only with repeat-purchase evidence; 31% repeat at month 6 is strong. Founder knows distribution. Invested."
+    },
+    {
+      "id": "M-04", "company": "Saathi Health", "sector": "consumer tech", "stage": "pre-seed", "decision": "invest", "date": "2024-02-08",
+      "profile": "Saathi Health is a WhatsApp-first chronic care companion for diabetics in tier-2 cities. Founders are a doctor and an ex-product manager from a health app. 8,000 users, 45% monthly retention, launched 4 months ago with a tiny team.",
+      "reasoning": "Speed of execution impressed us: live in 6 weeks, iterating weekly. Retention is unusual for health. Market is large and under-served. Invested despite no revenue yet."
+    },
+    {
+      "id": "M-05", "company": "Kaam Kart", "sector": "consumer tech", "stage": "pre-seed", "decision": "invest", "date": "2024-05-22",
+      "profile": "Kaam Kart is a hyperlocal jobs marketplace for blue-collar workers. Founders are two first-time founders from a consulting firm. 5,000 workers signed up, 40 employers, no repeat hiring data yet.",
+      "reasoning": "We invested on market size and founder energy. In hindsight founder-market fit was weak; the company shut down after 18 months. Lesson: do not let market size compensate for missing founder-market fit."
+    },
+    {
+      "id": "M-06", "company": "AdNinja", "sector": "consumer tech", "stage": "pre-seed", "decision": "pass", "date": "2023-05-30",
+      "profile": "AdNinja calls itself an AI marketing platform. Revenue INR 15 L a month, all from managed campaigns delivered by a 20-person team. Plans to build a self-serve product later.",
+      "reasoning": "This is an agency. Services revenue does not show product pull and does not scale like software. Pass."
+    },
+    {
+      "id": "M-07", "company": "Glow Theory", "sector": "consumer brands", "stage": "pre-seed", "decision": "pass", "date": "2023-09-14",
+      "profile": "Glow Theory is a D2C makeup brand. INR 20 L monthly GMV in 4 months, 80% from paid ads. Founder is a beauty influencer with 400k followers. Repeat rate not tracked.",
+      "reasoning": "Passed: no repeat data and acquisition is all paid. Note: Glow Theory raised a seed from another fund 10 months later with 28% repeat. We may have been too early to pass; we should have asked for repeat data instead of passing."
+    },
+    {
+      "id": "M-08", "company": "Ledgerly", "sector": "fintech", "stage": "seed", "decision": "pass", "date": "2024-03-11",
+      "profile": "Ledgerly is accounting software for SMEs. Raised a USD 2M seed round. 400 paying SMEs.",
+      "reasoning": "Outside our stage - already raised a priced seed. Pass on stage, not on quality."
+    }
+  ]
+}

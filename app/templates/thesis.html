@@ -1,0 +1,19 @@
+{% extends "base.html" %}{% block title %}Thesis{% endblock %}
+{% block body %}
+<h1>Working thesis <span class="mono small muted">{{ rubric.RUBRIC_VERSION }}</span></h1>
+<p class="sub">The fund publishes no rubric. This is the reconstruction every score is pinned to. Anything marked ASSUMPTION must be verified with the partners (docs/THESIS.md lists what each gap costs).</p>
+<div class="card"><b>Which thesis this uses, and why.</b> {{ rubric.THESIS_USED }}</div>
+<h2>Hard gates</h2>
+<div class="tbl"><table><tr><th>Gate</th><th>Definition</th><th>Where it comes from</th></tr>
+{% for g in rubric.GATES %}<tr><td><b>{{ g.name }}</b></td><td>{{ g.definition }}</td><td class="small">{{ g.basis }}</td></tr>{% endfor %}</table></div>
+<h2>Scored criteria</h2>
+<div class="tbl"><table><tr><th>Criterion</th><th class="num">Weight</th><th>Definition and anchors</th><th>Where it comes from</th></tr>
+{% for c in rubric.CRITERIA %}<tr><td><b>{{ c.name }}</b></td><td class="num">{{ c.weight }}</td><td>{{ c.definition }}<div class="small muted">{% for k, v in c.anchors|dictsort(reverse=true) %}{{ k }} = {{ v }}<br>{% endfor %}</div></td><td class="small">{{ c.basis }}</td></tr>{% endfor %}</table></div>
+<h2>How the partners judge each category</h2>
+<p class="sub">Given to the model as guidance, not a checklist ("written rules turn into checklists and founders learn to pass them", PN-2).</p>
+<div class="tbl"><table><tr><th>Category</th><th>Test</th></tr>
+{% for k, v in rubric.CATEGORY_TESTS.items() %}<tr><td><b>{{ k }}</b></td><td>{{ v }}</td></tr>{% endfor %}</table></div>
+<h2>Decision rule</h2>
+<p>Any gate fails → <b>Pass</b>. Possible overlap with a portfolio company → <b>Hold</b> for Kushal (PN-4). Evidence covers less than {{ (rubric.THRESHOLDS.min_coverage*100)|int }}% of the weight → <b>Riya to review</b> (the system refuses to guess). Otherwise total ≥ {{ rubric.THRESHOLDS.take_call }} → <b>Take the call</b>; below {{ rubric.THRESHOLDS.pass_below }} → <b>Pass</b>; in between → <b>Riya to review</b>.</p>
+<details class="card"><summary>Exact rubric text sent to the model</summary><pre>{{ rubric_text }}</pre></details>
+{% endblock %}

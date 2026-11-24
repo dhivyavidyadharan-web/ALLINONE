@@ -1,0 +1,48 @@
+{% extends "base.html" %}{% block title %}Inbox{% endblock %}
+{% block body %}
+<h1>Inbox</h1>
+<p class="sub">Every application is scored against the thesis with a source behind each claim. Nothing is decided until Riya or a partner decides.</p>
+
+<div class="grid g4" style="margin-bottom:16px">
+  {% for s in ['queued','processing','scored','needs_attention','approved','rejected'] %}
+  <a class="stat" href="/?status={{ s }}" style="text-decoration:none;color:inherit"><div class="k">{{ s.replace('_',' ') }}</div><div class="v">{{ acct.by_status.get(s, 0) }}</div></a>
+  {% endfor %}
+</div>
+<div class="banner {{ 'info' if acct.ok else 'bad' }}">
+  <b>Accounting:</b> {{ acct.total }} applications received, {{ acct.total }} accounted for in a known state.
+  {% if not acct.ok %} Problem: {{ acct.unexplained }} {{ acct.unknown_states }}{% endif %}
+</div>
+
+<div class="card row">
+  <b>Load:</b>
+  {% for b in sample_batches %}<form class="inline" method="post" action="/load/{{ b }}"><button class="sec">Sample batch "{{ b }}"</button></form>{% endfor %}
+  <form class="inline row" method="post" action="/volume-test"><input type="number" name="n" value="20" min="1" max="200" style="width:70px"><button>Run volume test</button></form>
+  {% if not paused %}<form class="inline" method="post" action="/pause"><button class="sec">Pause system</button></form>{% endif %}
+  <span class="muted small">Filter:</span>
+  <form class="inline" method="get"><select name="batch" onchange="this.form.submit()"><option value="">all batches</option>
+    {% for b in batches %}<option {{ 'selected' if b == batch }}>{{ b }}</option>{% endfor %}</select>
+    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}</form>
+  {% if batch or status %}<a href="/">clear</a>{% endif %}
+</div>
+
+<div class="tbl"><table>
+<tr><th>Ref</th><th>Company</th><th>Sector</th><th class="num">Score</th><th>Evidence</th><th>Recommendation</th><th>Status / reason</th><th>Call</th><th class="num">Cost</th></tr>
+{% for r in rows %}
+<tr>
+  <td class="mono"><a href="/app/{{ r.id }}">{{ r.ref }}</a></td>
+  <td><a href="/app/{{ r.id }}"><b>{{ r.company or '(no name)' }}</b></a>{% if r.source == 'warm_intro' %} <span class="small muted">warm intro</span>{% endif %}
+      {% if r.flags %}<span class="pill p-error" title="Prompt-injection attempt detected and ignored">safety flag</span>{% endif %}
+      {% if r.two_liner %}<div class="small muted">{{ r.two_liner }}</div>{% endif %}</td>
+  <td>{{ r.sector or '—' }}</td>
+  <td class="num score">{{ r.total if r.total is not none else '—' }}</td>
+  <td>{% if r.coverage is not none %}<div class="bar" title="{{ (r.coverage*100)|int }}% of rubric weight has evidence"><i style="width:{{ (r.coverage*100)|int }}%"></i></div><span class="small muted">{{ (r.coverage*100)|int }}%</span>{% else %}—{% endif %}</td>
+  <td>{% if r.verdict %}<span class="pill p-{{ r.verdict }}">{{ VERDICT[r.verdict] }}</span>{% endif %}</td>
+  <td><span class="pill p-{{ r.status }}">{{ r.status.replace('_',' ') }}</span><div class="small muted">{{ r.status_reason or '' }}</div></td>
+  <td>{% if r.out_stage %}<span class="pill p-{{ r.out_stage }}">{{ r.out_stage.replace('_',' ') }}</span>{% if r.meeting_start %}<div class="small">{{ r.meeting_start|slot }}</div>{% endif %}{% endif %}</td>
+  <td class="num small">{{ '$%.4f'|format(r.cost) if r.cost else '' }}</td>
+</tr>
+{% else %}
+<tr><td colspan="9" class="muted">No applications yet. Load a sample batch above, or POST to <span class="mono">/api/applications</span>.</td></tr>
+{% endfor %}
+</table></div>
+{% endblock %}

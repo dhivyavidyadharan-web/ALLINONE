@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% block title %}Outreach{% endblock %}
+{% block body %}
+<h1>Outreach &amp; calendar</h1>
+<p class="sub">Riya's calendar (simulated; swap for Google Calendar) and every founder thread the booking agent is handling.</p>
+<div class="card row">
+  <b>Demo clock:</b> now {{ now|short }} (offset {{ clock_offset }} days).
+  <form class="inline row" method="post" action="/clock/advance"><input type="number" name="days" value="1" step="1" style="width:60px"><button class="sec">Advance days &amp; run follow-ups</button></form>
+  <form class="inline" method="post" action="/clock/reset"><button class="sec">Reset clock</button></form>
+  <span class="small muted">Follow-up after {{ config.FOLLOW_UP_AFTER_DAYS }} days of silence; thread closes after {{ config.CLOSE_AFTER_FOLLOW_UPS }} follow-ups.</span>
+</div>
+<div class="grid g2">
+<div>
+<h2>Founder threads</h2>
+<div class="tbl"><table><tr><th>Company</th><th>Stage</th><th>Follow-ups</th><th>Last sent</th><th>Meeting</th></tr>
+{% for t in threads %}<tr><td><a href="/app/{{ t.aid }}#outreach">{{ t.company }}</a></td><td><span class="pill p-{{ t.stage }}">{{ t.stage.replace('_',' ') }}</span>{% if t.note %}<div class="small muted">{{ t.note }}</div>{% endif %}</td>
+<td class="num">{{ t.follow_ups or 0 }}</td><td class="small">{{ t.last_out_at|short }}</td><td class="small">{{ t.meeting_start|slot }}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">No threads yet. Approve or reject an application to start one.</td></tr>{% endfor %}
+</table></div>
+</div>
+<div>
+<h2>Riya's calendar</h2>
+<div class="tbl"><table><tr><th>When</th><th>What</th></tr>
+{% for e in events %}<tr><td class="small">{{ e.start_at|slot }}</td><td>{% if e.kind == 'meeting' %}<b><a href="/app/{{ e.app_id }}">{{ e.title }}</a></b> <span class="pill p-booked">founder call</span>{% else %}<span class="muted">{{ e.title }}</span>{% endif %}</td></tr>{% endfor %}
+</table></div>
+</div></div>
+{% endblock %}

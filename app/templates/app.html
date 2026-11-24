@@ -1,0 +1,122 @@
+{% extends "base.html" %}{% block title %}{{ a.company }}{% endblock %}
+{% block body %}
+<p class="small"><a href="/">← Inbox</a></p>
+<h1>{{ a.company or '(no name)' }} <span class="mono muted small">{{ a.ref }}</span></h1>
+<p class="sub">{{ a.sector or 'sector not stated' }} · {{ a.stage or 'stage not stated' }} · {{ a.city }} · {{ a.source.replace('_',' ') }} ·
+ founder <span class="mono">{{ a.founder_id }}</span> ({{ founder.name if founder else '' }}) ·
+ {% if a.website %}<a href="{{ a.website }}" target="_blank" rel="noopener">{{ a.website }}</a>{% else %}no website{% endif %}</p>
+
+<div class="row" style="margin-bottom:14px">
+  <span class="pill p-{{ a.status }}">{{ a.status.replace('_',' ') }}</span> <span class="muted">{{ a.status_reason or '' }}</span>
+  {% if a.trace_id %}<a class="btn sec" href="/trace/{{ a.trace_id }}">Open run trace</a>{% endif %}
+  {% if lf_url %}<a class="btn sec" href="{{ lf_url }}" target="_blank" rel="noopener">Open in Langfuse</a>{% endif %}
+  <span class="small muted">{{ calls.n }} model calls · ${{ '%.4f'|format(calls.c) }}</span>
+  <form class="inline" method="post" action="/app/{{ a.id }}/rescore"><button class="sec">Re-score</button></form>
+</div>
+
+{% if rec %}
+<div class="grid g2">
+  <div class="card">
+    <div class="row"><span class="pill p-{{ rec.verdict }}" style="font-size:14px">{{ VERDICT[rec.verdict] }}</span>
+      <span class="score" style="font-size:22px">{{ rec.total }}/100</span>
+      <span class="muted">evidence covers {{ (rec.coverage*100)|int }}% of the rubric weight</span></div>
+    <p><b>{{ rec.two_liner }}</b></p>
+    <h3>Case for</h3><p>{{ rec.case_for }}</p>
+    <h3>Case against</h3><p>{{ rec.case_against }}</p>
+    <p class="small"><b>Thesis used:</b> {{ rubric.RUBRIC_VERSION }}. {{ rubric.THESIS_USED }}</p>
+    <p class="small muted">The verdict is computed by fixed rules (gates, then take-call ≥ {{ rubric.THRESHOLDS.take_call }}, pass &lt; {{ rubric.THRESHOLDS.pass_below }}, abstain if evidence &lt; {{ (rubric.THRESHOLDS.min_coverage*100)|int }}%). The model writes the case; it does not pick the verdict.</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Gates</h3>
+    {% for g in gates %}
+      <div>{% if g.passed is sameas true %}<span class="pill p-ok">pass</span>{% elif g.passed is sameas false %}<span class="pill p-error">fail</span>{% else %}<span class="pill p-queued">unknown</span>{% endif %}
+      <b>{{ g.key }}</b> — {{ g.reason }} {% for c in g.claim_ids %}<a class="cite" href="#{{ c }}">{{ c }}</a>{% endfor %}</div>
+    {% endfor %}
+    <h3>What it couldn't find</h3>
+    {% for g in gaps %}<div class="gap {{ 'safety' if g.criterion in ('safety','portfolio','conflict') }}"><b>{{ g.criterion }}</b>: {{ g.missing }} <span class="small muted">— {{ g.cost }}</span></div>
+    {% else %}<p class="muted">No gaps recorded.</p>{% endfor %}
+  </div>
+</div>
+
+<h2 id="scores">Criterion by criterion</h2>
+<div class="tbl"><table>
+<tr><th>Criterion (weight)</th><th class="num">Score /5</th><th>Why, with sources</th><th>Correct it</th></tr>
+{% for c in rubric.CRITERIA %}{% set s = smap.get(c.key) %}
+<tr>
+  <td><b>{{ c.name }}</b> <span class="muted">({{ c.weight }})</span><div class="small muted">{{ c.definition }}</div></td>
+  <td class="num score">{% if s and s.score is not none %}{{ s.score }}{% if s.corrected_by %}<div class="small muted">AI said {{ s.ai_score if s.ai_score is not none else '—' }}<br>set by {{ s.corrected_by }}</div>{% endif %}{% else %}<span class="pill p-queued">no evidence</span>{% endif %}</td>
+  <td>{% if s %}{{ s.rationale }}
+      <div>{% for cid in s.claim_ids|fromjson %}<a class="cite" href="#{{ cid }}" title="{{ cmap[cid].text if cid in cmap }}">{{ cid }}</a>{% endfor %}
+      {% for m in s.memo_refs|fromjson %}<span class="cite" title="Past deal memo used as precedent">{{ m }}</span>{% endfor %}</div>
+      {% for cid in s.claim_ids|fromjson %}{% if cid in cmap %}<div class="small muted">{{ cid }}: “{{ cmap[cid].text }}” <i>— {{ cmap[cid].source_type }}</i></div>{% endif %}{% endfor %}
+      {% endif %}</td>
+  <td><form method="post" action="/app/{{ a.id }}/correct" class="row">
+      <input type="hidden" name="criterion" value="{{ c.key }}">
+      <input type="number" name="score" min="0" max="5" step="0.5" value="{{ s.score if s and s.score is not none else '' }}" style="width:64px" required>
+      <input name="reason" placeholder="why (this teaches the system)" required style="width:190px">
+      <button class="sec">Save</button></form></td>
+</tr>{% endfor %}
+</table></div>
+{% if corrs %}<p class="small">Past partner corrections applied to this score:
+  {% for k in corrs %}<span class="cite">K{{ k.id }}</span> {{ k.criterion }} {{ k.original }}→{{ k.corrected }} ({{ k.reason }}){% if not loop.last %}; {% endif %}{% endfor %}</p>{% endif %}
+{% endif %}
+
+<h2 id="claims">Evidence</h2>
+<div class="tbl"><table><tr><th>Id</th><th>Claim</th><th>Source</th></tr>
+{% for c in claims %}<tr id="{{ c.cid }}" class="claim"><td class="mono">{{ c.cid }}</td><td>{{ c.text }}</td>
+  <td class="small">{{ c.source_type }} · {% if c.source_ref.startswith('http') %}<a href="{{ c.source_ref }}" target="_blank" rel="noopener">{{ c.source_ref }}</a>{% else %}{{ c.source_ref }}{% endif %}</td></tr>
+{% else %}<tr><td colspan="3" class="muted">No evidence yet.</td></tr>{% endfor %}
+</table></div>
+<form method="post" action="/app/{{ a.id }}/claim" class="card row">
+  <b>Add your own research:</b><input name="text" placeholder="Fact you verified" required style="flex:1;min-width:220px">
+  <input name="source_ref" placeholder="Source URL or note" style="width:220px"><button class="sec">Add claim</button>
+  <span class="small muted">then Re-score to include it</span></form>
+
+<details class="card"><summary><b>Application as submitted</b> (deck text and form)</summary>
+<pre>{{ a.deck_text or '(empty deck)' }}</pre>
+{% for k, v in form.items() %}<div><b>{{ k }}</b>: {{ v }}</div>{% endfor %}
+</details>
+
+<h2 id="outreach">Decision and outreach</h2>
+<div class="card">
+  {% for d in decisions %}<p><span class="pill p-{{ 'approved' if d.decision=='approve' else 'rejected' }}">{{ d.decision }}</span> by {{ d.by_user }} — {{ d.note }}
+    <span class="small muted">{{ d.created_at|short }} · AI said {{ VERDICT.get(d.ai_verdict, '—') }}{% if d.agreed is not none %} · {{ 'agreed' if d.agreed else 'DISAGREED' }}{% endif %}</span></p>{% endfor %}
+  {% if a.status in ('scored','needs_attention') %}
+  <form method="post" action="/app/{{ a.id }}/decide" class="row">
+    <input name="note" placeholder="Note (goes into the email for rejections)" style="flex:1;min-width:260px">
+    <select name="by"><option>Riya</option><option>Kushal</option><option>Aditya</option></select>
+    <button name="decision" value="approve">Approve → draft invite</button>
+    <button name="decision" value="reject" class="danger">Reject → draft email</button>
+  </form>{% endif %}
+
+  {% if o %}<p>Thread stage: <span class="pill p-{{ o.stage }}">{{ o.stage.replace('_',' ') }}</span>
+    {% if o.meeting_start %} <b>Meeting: {{ o.meeting_start|slot }}</b>{% endif %}
+    {% if o.follow_ups %} · {{ o.follow_ups }} follow-up(s) sent{% endif %} {% if o.note %}· <i>{{ o.note }}</i>{% endif %}</p>{% endif %}
+
+  {% for e in emails %}
+    {% if e.status == 'draft' %}
+    <form method="post" action="/email/{{ e.id }}/send" class="email">
+      <div class="h"><b>DRAFT ({{ e.kind }})</b> — edit freely; your edits teach future drafts.</div>
+      <input name="subject" value="{{ e.subject }}" style="width:100%;margin-bottom:6px">
+      <textarea name="body" rows="12">{{ e.body }}</textarea>
+      <div class="row"><button>Send</button></div>
+    </form>
+    {% else %}
+    <div class="email {{ 'in' if e.direction == 'in' }}"><div class="h">{{ 'FROM FOUNDER' if e.direction == 'in' else 'SENT · ' ~ e.kind }} · {{ (e.sent_at or e.created_at)|short }} · <b>{{ e.subject }}</b>
+      {% if e.ai_draft and e.ai_draft != e.body %}<span class="pill p-scored">edited by Riya</span>{% endif %}</div>{{ e.body }}</div>
+    {% endif %}
+  {% endfor %}
+
+  {% if o and o.stage in ('awaiting_reply','slots_offered','needs_riya') %}
+  <form method="post" action="/app/{{ a.id }}/reply" class="card" style="background:#f3f7fd">
+    <b>Simulate the founder's reply</b> <span class="small muted">(stand-in for the inbox; in production this arrives from Gmail)</span>
+    <textarea name="text" id="reply" rows="3" placeholder="Type a reply…"></textarea>
+    <div class="row small">Presets:
+      <a href="#" onclick="reply.value='Option 2 works great for me, thanks!';return false">accept slot 2</a> ·
+      <a href="#" onclick="reply.value='None of those work - could we do Thursday 4pm instead?';return false">counter-propose</a> ·
+      <a href="#" onclick="reply.value='Thanks, but we are not raising right now. Not interested at the moment.';return false">decline</a> ·
+      <a href="#" onclick="reply.value='Before we meet, what cheque size do you usually write?';return false">question</a>
+      <button style="margin-left:auto">Founder sends reply</button></div>
+  </form>{% endif %}
+</div>
+{% endblock %}

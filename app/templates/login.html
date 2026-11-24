@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in · All In Capital</title><link rel="stylesheet" href="/static/style.css"></head>
+<body style="display:grid;place-items:center;min-height:100vh">
+<form method="post" action="/login" class="card" style="width:min(360px,92vw)">
+  <h1 style="margin-top:0">All In Capital · Screening</h1>
+  <p class="sub">Internal tool. Applicant data inside.</p>
+  {% if bad %}<div class="banner bad">Wrong password.</div>{% endif %}
+  <input type="password" name="password" placeholder="Password" autofocus required style="width:100%;margin-bottom:10px">
+  <button style="width:100%">Sign in</button>
+</form>
+</body></html>

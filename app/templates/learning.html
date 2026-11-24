@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}Learning{% endblock %}
+{% block body %}
+<h1>Learning from corrections</h1>
+<p class="sub">When Riya or a partner corrects a score, the correction is stored with the company's sector and keywords. Future similar applications receive it as a calibration note, and the score page shows which corrections were applied. Email edits steer future drafts the same way.</p>
+<h2>Score corrections</h2>
+<div class="tbl"><table><tr><th>Id</th><th>Company</th><th>Criterion</th><th class="num">AI → human</th><th>Reason</th><th>By</th><th class="num">Times reused</th></tr>
+{% for k in corr %}<tr><td class="mono">K{{ k.id }}</td><td><a href="/app/{{ k.app_id }}">{{ k.company }}</a> <span class="small muted">{{ k.sector }}</span></td><td>{{ k.criterion }}</td>
+<td class="num">{{ k.original }} → <b>{{ k.corrected }}</b></td><td>{{ k.reason }}</td><td>{{ k.by_user }}</td><td class="num">{{ k.times_applied }}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">No corrections yet. Correct a score on any application page.</td></tr>{% endfor %}</table></div>
+<h2>Email edits</h2>
+{% for e in edits %}<div class="card"><b>{{ e.company }}</b> · {{ e.kind }} · {% if e.ai_draft != e.body %}<span class="pill p-scored">edited</span>{% else %}<span class="pill p-ok">sent as drafted</span>{% endif %}
+{% if e.ai_draft != e.body %}<div class="grid g2"><div><b class="small">AI draft</b><pre>{{ e.ai_draft }}</pre></div><div><b class="small">What Riya sent</b><pre>{{ e.body }}</pre></div></div>{% endif %}</div>
+{% else %}<p class="muted">No emails sent yet.</p>{% endfor %}
+{% endblock %}

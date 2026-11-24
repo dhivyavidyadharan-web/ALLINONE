@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block title %}Traces{% endblock %}
+{% block body %}
+<h1>Traces</h1>
+<p class="sub">One trace per run (triage, outreach step, backtest case). Open any to see every step, model call, prompt version, tokens and cost.
+{% if langfuse %}Also shipped to Langfuse at {{ config.LANGFUSE_HOST }}.{% else %}Set LANGFUSE_PUBLIC_KEY / LANGFUSE_SECRET_KEY to also send them to Langfuse.{% endif %}</p>
+<div class="tbl"><table><tr><th>Started</th><th>Run</th><th>Status</th><th class="num">Spans</th><th class="num">Model calls</th><th class="num">Cost</th></tr>
+{% for t in rows %}<tr><td class="small">{{ t.start_at|short }}</td><td><a href="/trace/{{ t.id }}">{{ t.name }}</a></td><td><span class="pill p-{{ 'ok' if t.status == 'ok' else ('processing' if t.status == 'running' else 'error') }}">{{ t.status }}</span></td>
+<td class="num">{{ t.n_spans }}</td><td class="num">{{ t.n_calls }}</td><td class="num">${{ '%.4f'|format(t.cost_usd or 0) }}</td></tr>
+{% else %}<tr><td colspan="6" class="muted">No runs yet.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

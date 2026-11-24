@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% block title %}Prompt audit{% endblock %}
+{% block body %}
+<h1>Prompt audit</h1>
+<p class="sub">Every place the system calls a model, what it sends, and a scan of every recorded payload for email addresses and phone numbers. The target is zero.</p>
+<div class="tbl"><table><tr><th>Call</th><th>Version</th><th>What it sends (and only this)</th><th class="num">Calls</th><th class="num">Avg input tokens</th><th class="num">Payloads with PII</th></tr>
+{% for r in rows %}<tr><td><b>{{ r.name }}</b><div class="small muted">{{ r.model }}</div></td><td class="mono">{{ r.version }}</td><td>{{ r.sends }}</td>
+<td class="num">{{ r.n }}</td><td class="num">{{ r.avg_in }}</td><td class="num"><span class="pill p-{{ 'ok' if r.pii == 0 else 'error' }}">{{ r.pii }}</span></td></tr>{% endfor %}
+</table></div>
+<h2>Exact last payload per call</h2>
+{% for r in rows if r.last %}
+<details class="card"><summary><b>{{ r.name }}</b> <span class="mono small">{{ r.version }}</span></summary>
+<b class="small">System</b><pre>{{ r.last.system }}</pre><b class="small">User</b><pre>{{ r.last.user }}</pre></details>
+{% endfor %}
+{% endblock %}

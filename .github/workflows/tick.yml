@@ -1,0 +1,21 @@
+name: Queue heartbeat
+# Vercel functions can't run in the background, so something must pull queued work.
+# This calls the deployed app every 5 minutes (GitHub's minimum; runs can be delayed at busy times).
+# Repo secrets needed: APP_URL (e.g. https://your-app.vercel.app) and CRON_SECRET (same value as in Vercel).
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Pull queued work
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then echo "APP_URL / CRON_SECRET not set - skipping"; exit 0; fi
+          curl -fsS -X POST "$APP_URL/api/tick" -H "Authorization: Bearer $CRON_SECRET" --max-time 75

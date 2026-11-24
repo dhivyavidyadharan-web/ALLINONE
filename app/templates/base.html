@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Screening{% endblock %} · All In Capital</title>
+<link rel="stylesheet" href="/static/style.css">
+{% block head %}{% endblock %}
+</head><body>
+<header>
+  <a class="logo" href="/">All In Capital · Screening</a>
+  <nav>
+    {% set p = request.url.path %}
+    <a href="/" class="{{ 'on' if p == '/' or p.startswith('/app') }}">Inbox</a>
+    <a href="/calendar" class="{{ 'on' if p == '/calendar' }}">Outreach &amp; calendar</a>
+    <a href="/backtest" class="{{ 'on' if p == '/backtest' }}">Trust (backtest)</a>
+    <a href="/learning" class="{{ 'on' if p == '/learning' }}">Learning</a>
+    <a href="/costs" class="{{ 'on' if p == '/costs' }}">Costs</a>
+    <a href="/traces" class="{{ 'on' if p.startswith('/trace') }}">Traces</a>
+    <a href="/audit" class="{{ 'on' if p == '/audit' }}">Prompt audit</a>
+    <a href="/thesis" class="{{ 'on' if p == '/thesis' }}">Thesis</a>
+  </nav>
+  <span class="mode">db: <b>{{ backend }}</b> · model: <b>{{ route }}</b> · Langfuse: <b>{{ 'on' if langfuse else 'local only' }}</b>{% if clock_offset %} · clock +{{ clock_offset }}d{% endif %}
+    {% if logged_in %}<form class="inline" method="post" action="/logout"><button class="sec" style="padding:2px 8px;margin-left:8px">Log out</button></form>{% endif %}</span>
+</header>
+{% if working %}
+<div id="worker-bar" class="banner info" style="margin:0;border-radius:0">Working through {{ working }} queued item(s)… this page refreshes as they finish.</div>
+<script>
+// Serverless queue: while this page is open and work is queued, it pulls one tick at a time.
+(function(){ let stop=false; addEventListener('beforeunload',()=>stop=true);
+  fetch('/api/tick',{method:'POST'}).then(r=>r.json()).catch(()=>null).then(()=>{ if(!stop) setTimeout(()=>location.reload(), 800); });
+})();
+</script>
+{% endif %}
+<main>
+{% if paused %}
+<div class="banner bad"><b>System paused.</b> {{ paused_reason }}. Queued applications are waiting, none are lost.
+  <form class="inline" method="post" action="/resume"><button class="danger">Resume (I accept today's extra spend)</button></form></div>
+{% endif %}
+{% for a in alerts %}{% if loop.first %}<div class="banner warn"><div>{% endif %}
+  <div><b>{{ a.level|upper }}</b> {{ a.message }} <span class="small muted">{{ a.created_at|short }}</span></div>
+{% if loop.last %}</div><form class="inline" method="post" action="/alerts/ack"><button class="sec">Dismiss</button></form></div>{% endif %}{% endfor %}
+{% block body %}{% endblock %}
+</main>
+</body></html>

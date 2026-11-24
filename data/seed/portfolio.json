@@ -1,0 +1,101 @@
+{
+ "_note": "Portfolio companies known from the Case 03 seed data: the six INVESTED deal memos plus MeetRecord (named in Partner Meeting Notes, Meeting 4). This is NOT the full portfolio - the case does not provide it. Riya's note: 'Any new application should be checked against the full list of portfolio companies.' Add the rest from the fund's website before relying on the conflict check.",
+ "complete": false,
+ "companies": [
+  {
+   "name": "The ePlane Company",
+   "sector": "deeptech",
+   "what": "Electric vertical take-off and landing (eVTOL) aircraft and drones for short-range intracity travel and aerial mobility.",
+   "keywords": [
+    "evtol",
+    "aircraft",
+    "air taxi",
+    "aerial mobility",
+    "drone",
+    "uav",
+    "aviation"
+   ]
+  },
+  {
+   "name": "Unbox Robotics",
+   "sector": "deeptech",
+   "what": "AI-assisted robotic package-sorting systems for warehouses and fulfilment centres.",
+   "keywords": [
+    "warehouse",
+    "robot",
+    "robotics",
+    "sorting",
+    "fulfilment",
+    "parcel sorting",
+    "logistics automation"
+   ]
+  },
+  {
+   "name": "Wint Wealth",
+   "sector": "fintech",
+   "what": "Platform making bonds and fixed-income products accessible to retail investors in India.",
+   "keywords": [
+    "bonds",
+    "fixed income",
+    "retail investors",
+    "debt products",
+    "wealth",
+    "investment platform"
+   ]
+  },
+  {
+   "name": "Giva",
+   "sector": "consumer brands",
+   "what": "Online-first fine silver jewellery brand, expanding into gold and lab-grown diamonds.",
+   "keywords": [
+    "jewellery",
+    "jewelry",
+    "silver jewellery",
+    "gold jewellery",
+    "lab-grown diamond",
+    "fine jewellery"
+   ]
+  },
+  {
+   "name": "SuperK",
+   "sector": "consumer tech",
+   "what": "Tech-enabled grocery retail network for small towns; rebrands neighbourhood stores with standard pricing, supply and billing.",
+   "keywords": [
+    "kirana",
+    "grocery",
+    "small-town retail",
+    "neighbourhood stores",
+    "franchise retail",
+    "store network"
+   ]
+  },
+  {
+   "name": "Jai Kisan",
+   "sector": "fintech",
+   "what": "Financing for farmers and rural households for income-generating purchases such as farm and dairy equipment.",
+   "keywords": [
+    "farmer",
+    "rural credit",
+    "agri",
+    "agriculture",
+    "rural lending",
+    "dairy",
+    "equipment finance"
+   ]
+  },
+  {
+   "name": "MeetRecord",
+   "sector": "consumer tech",
+   "what": "Meeting notes and call-summary product (overlap flagged in partner meeting 4).",
+   "keywords": [
+    "meeting notes",
+    "call summary",
+    "call recording",
+    "meeting summary",
+    "transcription",
+    "note-taking",
+    "sales calls"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}Trace{% endblock %}
+{% block body %}
+<p class="small"><a href="/traces">← Traces</a>{% if t and t.app_id %} · <a href="/app/{{ t.app_id }}">Application</a>{% endif %}</p>
+{% if not t %}<p>Trace not found.</p>{% else %}
+<h1>{{ t.name }}</h1>
+<p class="sub">{{ t.start_at|short }} → {{ (t.end_at or '')|short }} · {{ t.status }} · ${{ '%.4f'|format(t.cost_usd or 0) }}
+{% if lf_url %} · <a href="{{ lf_url }}" target="_blank" rel="noopener">Open in Langfuse</a>{% endif %} · trace id <span class="mono">{{ t.id }}</span></p>
+<details class="card"><summary><b>Run metadata</b> — prompt versions, rubric version, model route</summary><pre>{{ pv|tojson(indent=2) }}</pre></details>
+<div class="tbl"><table><tr><th>Step</th><th>Status</th><th>Details</th></tr>
+{% for depth, s in spans %}{% set m = s.metadata|fromjson %}
+<tr><td><span class="indent" style="width:{{ depth*18 }}px"></span>{% if s.kind == 'generation' %}🧠 {% endif %}<b>{{ s.name }}</b>
+  {% if s.kind == 'generation' %}<div class="small muted" style="padding-left:{{ depth*18 }}px">{{ m.model }} · <span class="mono">{{ m.prompt_version }}</span> · {{ m.tokens_in }}/{{ m.tokens_out }} tok · ${{ '%.5f'|format(m.cost_usd or 0) }} · via {{ m.route }}</div>{% endif %}</td>
+  <td><span class="pill p-{{ 'ok' if s.status == 'ok' else 'error' }}">{{ s.status[:60] }}</span></td>
+  <td><details><summary class="small">input / output</summary><b class="small">Input</b><pre>{{ s.input }}</pre><b class="small">Output</b><pre>{{ s.output }}</pre></details></td></tr>
+{% endfor %}</table></div>
+{% endif %}
+{% endblock %}

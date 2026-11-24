@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% block title %}Trust{% endblock %}
+{% block body %}
+<h1>Trust: backtest against past decisions</h1>
+<p class="sub">Each past memo's profile (what the fund knew then) is screened blind: the memo itself is excluded from the system's precedent search. The question is how often it disagrees with the partners, and who was right.</p>
+<div class="card row"><form class="inline" method="post" action="/backtest/run"><button {{ 'disabled' if r.running }}>{{ 'Running…' if r.running else 'Run backtest' }}</button></form>
+  {% if runs %}<span class="small muted">Runs:</span>{% for x in runs %}<a class="small" href="/backtest?run={{ x.run_id }}">{{ x.run_id }}</a> {% endfor %}{% endif %}</div>
+
+{% if r.rows %}
+<div class="grid g4" style="margin-bottom:16px">
+  <div class="stat"><div class="k">Agreement (where it committed)</div><div class="v">{{ (r.agreement*100)|int if r.agreement is not none else '—' }}%</div><div class="small muted">{{ r.agree }} of {{ r.decided }}</div></div>
+  <div class="stat"><div class="k">Abstained (sent to Riya)</div><div class="v">{{ r.abstain }}</div><div class="small muted">of {{ r.n }} memos</div></div>
+  <div class="stat"><div class="k">Funded deals it would have passed</div><div class="v" style="color:{{ '#b3261e' if r.false_pass else 'inherit' }}">{{ r.false_pass }}</div><div class="small muted">the costly error</div></div>
+  <div class="stat"><div class="k">Live decisions agreeing with AI</div><div class="v">{{ r.live_agree }}/{{ r.live_n }}</div><div class="small muted">from the inbox</div></div>
+</div>
+<div class="grid g2">
+<div class="tbl"><table><tr><th>Partners \ System</th><th class="num">Take call</th><th class="num">Riya review</th><th class="num">Pass</th></tr>
+<tr><td><b>Invested</b></td><td class="num">{{ r.cm[('invest','take_call')] }}</td><td class="num">{{ r.cm[('invest','riya_review')] }}</td><td class="num">{{ r.cm[('invest','pass')] }}</td></tr>
+<tr><td><b>Passed</b></td><td class="num">{{ r.cm[('pass','take_call')] }}</td><td class="num">{{ r.cm[('pass','riya_review')] }}</td><td class="num">{{ r.cm[('pass','pass')] }}</td></tr></table></div>
+<div class="card small"><b>Go-live bar (to agree with Kushal in advance; see docs/TRUST.md):</b>
+<ul><li>Zero funded deals marked Pass on the backtest.</li><li>≥ 80% agreement where the system commits.</li><li>Abstain rate ≤ 30% (otherwise it isn't saving Riya time).</li>
+<li>Shadow mode: 2 weeks / ~50 live applications with Riya screening in parallel; same bars.</li><li>No PII on the audit page; cost per application under budget.</li></ul></div>
+</div>
+<h2>Case by case</h2>
+<div class="tbl"><table><tr><th>Memo</th><th>Company</th><th>Partners</th><th>System</th><th class="num">Score</th><th>Result</th><th>Who was right?</th></tr>
+{% for x in r.rows %}<tr><td class="mono">{{ x.memo_id }}</td><td>{{ x.company }}</td><td><span class="pill p-{{ 'approved' if x.actual=='invest' else 'rejected' }}">{{ x.actual }}</span></td>
+<td>{% if x.predicted in VERDICT %}<span class="pill p-{{ x.predicted }}">{{ VERDICT[x.predicted] }}</span>{% else %}<span class="pill p-error">{{ x.predicted }}</span>{% endif %}</td>
+<td class="num">{{ x.total if x.total is not none else '' }}</td>
+<td>{% if x.agreed is none %}<span class="pill p-queued">abstained</span>{% elif x.agreed %}<span class="pill p-ok">agrees</span>{% else %}<span class="pill p-error">disagrees</span>{% endif %}</td>
+<td class="small">{{ x.analysis }}
+  {% if x.agreed is none or not x.agreed %}<form method="post" action="/backtest/{{ x.id }}/verdict" class="row" style="margin-top:4px">
+  <select name="verdict"><option value="">Partner verdict…</option>{% for v in ['fund was right','system was right','unclear'] %}<option {{ 'selected' if x.human_verdict == v }}>{{ v }}</option>{% endfor %}</select><button class="sec">Save</button></form>{% endif %}</td></tr>
+{% endfor %}</table></div>
+{% else %}<p class="muted">No backtest yet.</p>{% endif %}
+{% endblock %}

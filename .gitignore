@@ -1,0 +1,8 @@
+.env
+.env*.local
+.vercel/
+data/*.db
+data/*.db-*
+__pycache__/
+.pytest_cache/
+.claude/
