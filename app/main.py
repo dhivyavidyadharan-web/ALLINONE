@@ -36,10 +36,26 @@ def boot():
             _booted = True
 
 
+def missing_settings() -> list[str]:
+    """Settings a deployed app can't run without. Checked before touching the database, so a missing one
+    shows a clear page instead of a crash (Vercel's filesystem is read-only, so there is no SQLite fallback)."""
+    if not config.ON_VERCEL:
+        return []
+    need = {"DATABASE_URL": config.DATABASE_URL, "APP_PASSWORD": config.APP_PASSWORD}
+    if config.LLM_MODE == "live":
+        need["GEMINI_API_KEY"] = config.GEMINI_API_KEY
+    return [k for k, v in need.items() if not v]
+
+
+SETUP_PAGE = ("<h2>Setup needed</h2><p>These settings are missing in Vercel (Project &rarr; Settings &rarr; Environment "
+              "Variables), using exactly these names:</p><ul>{items}</ul><p>Add them, then redeploy.</p>")
+
+
 @asynccontextmanager
 async def lifespan(_app):
-    boot()
-    worker.start()
+    if not missing_settings():
+        boot()
+        worker.start()
     yield
 
 
@@ -71,10 +87,13 @@ def _bearer_ok(req: Request, secret: str) -> bool:
 
 @app.middleware("http")
 async def guard(req: Request, call_next):
-    boot()
     p = req.url.path
-    if config.ON_VERCEL and not config.APP_PASSWORD and not p.startswith(OPEN_PATHS):
-        return HTMLResponse("APP_PASSWORD is not set for this deployment. Add it in Vercel project settings.", 503)
+    missing = missing_settings()
+    if missing:
+        if p.startswith("/api/"):
+            return JSONResponse({"error": "setup needed", "missing_settings": missing}, 503)
+        return HTMLResponse(SETUP_PAGE.format(items="".join(f"<li><code>{k}</code></li>" for k in missing)), 503)
+    boot()
     if not p.startswith(OPEN_PATHS) and not _authed(req):
         if p.startswith("/api/"):
             return JSONResponse({"error": "login required"}, 401)

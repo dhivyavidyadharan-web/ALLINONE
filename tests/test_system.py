@@ -260,3 +260,18 @@ def test_real_case03_batch(monkeypatch):
     assert "deck says 38, form says 42" in gaps("StockSathi")
     assert "injection" not in gaps("CAPilot").lower()  # 'AI assistant' product is not an injection
     assert not any("Giva" in gaps(c) for c in rows)    # 'Goldman' must not match 'gold'
+
+
+def test_deploy_missing_settings_shows_setup_page(monkeypatch):
+    """On Vercel with settings missing: a clear setup page, never a crash or a SQLite fallback."""
+    from fastapi.testclient import TestClient
+    from app import main
+    monkeypatch.setattr(config, "ON_VERCEL", True)
+    monkeypatch.setattr(config, "DATABASE_URL", "")
+    monkeypatch.setattr(config, "APP_PASSWORD", "")
+    monkeypatch.setattr(config, "LLM_MODE", "live")
+    monkeypatch.setattr(config, "GEMINI_API_KEY", "")
+    c = TestClient(main.app)
+    r = c.get("/")
+    assert r.status_code == 503 and "DATABASE_URL" in r.text and "GEMINI_API_KEY" in r.text and "APP_PASSWORD" in r.text
+    assert c.get("/api/ping").json()["missing_settings"] == ["DATABASE_URL", "APP_PASSWORD", "GEMINI_API_KEY"]
