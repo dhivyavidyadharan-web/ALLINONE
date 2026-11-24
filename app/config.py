@@ -36,7 +36,8 @@ ON_VERCEL = bool(os.getenv("VERCEL"))
 # --- Neon (core) ---------------------------------------------------------
 # Postgres connection string. Use Neon's *pooled* URL (host contains "-pooler").
 # Empty locally = SQLite file for offline development/tests only.
-DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+# NEON / GEMINI are accepted too (names used when the Vercel project was first set up).
+DATABASE_URL = (os.getenv("DATABASE_URL", "") or os.getenv("NEON", "")).strip()
 DB_PATH = Path(os.getenv("DB_PATH", ROOT / "data" / "allin.db"))
 SAMPLES_DIR = ROOT / "data" / "samples"   # fictional data, used by the automated tests
 # Seed data the app loads (applications, memos, portfolio, web fixtures). Real Case 03 data lives in data/seed.
@@ -46,7 +47,7 @@ DATA_DIR = Path(os.getenv("DATA_DIR", "") or (ROOT / "data" / "seed" if (ROOT / 
 # LLM_MODE=mock -> deterministic offline model (no key, no network), still costed and traced.
 # LLM_MODE=live -> Gemini via the google-genai Interactions API.
 LLM_MODE = os.getenv("LLM_MODE", "mock").lower()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "")
+GEMINI_API_KEY = (os.getenv("GEMINI_API_KEY", "") or os.getenv("GOOGLE_API_KEY", "") or os.getenv("GEMINI", "")).strip()
 MODEL_SCORE = os.getenv("MODEL_SCORE", "gemini-4-hydrogen")          # scoring, recommendation, backtest analysis
 MODEL_EXTRACT = os.getenv("MODEL_EXTRACT", "gemini-3.5-flash-lite")  # claim extraction, reply parsing
 MODEL_WRITE = os.getenv("MODEL_WRITE", "gemini-3.5-flash-lite")      # email drafting
