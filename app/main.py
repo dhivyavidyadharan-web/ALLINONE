@@ -44,7 +44,9 @@ async def lifespan(_app):
 
 
 app = FastAPI(title="All In Capital - Screening", lifespan=lifespan)
-app.mount("/static", StaticFiles(directory=str(config.ROOT / "public" / "static")), name="static")
+_STATIC = config.ROOT / "public" / "static"
+if _STATIC.is_dir():  # on Vercel, public/ is served by the CDN at /static/... and is not inside the function
+    app.mount("/static", StaticFiles(directory=str(_STATIC)), name="static")
 
 # ---------------- auth ----------------
 COOKIE = "aic_session"
